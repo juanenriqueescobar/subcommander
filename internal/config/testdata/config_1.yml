@@ -1,0 +1,41 @@
+
+# logger:
+#   level: debug
+
+instanceID:
+  # si debe detectar el ID de la instancia para el logger
+  # true si se ejecuta en una instancia en la nube de aws
+  aws: true  
+
+sqs:
+  # cola que puede recibir varios contratos diferentes, discriminados por un atributo
+  - queueName: producto-api-order-operations    
+    attributeName: operation
+    waitTimeSeconds: 20
+    maxNumberOfMessages: 5
+    waitBetweenRequest: 5
+    commands:      
+      - attributeValue: change-state
+        command: php
+        args:
+          - /srv/www/producto-api/artisan
+          - order:change-state
+      - attributeValue: create-order-mu
+        command: php
+        args:
+          - /srv/www/producto-api/artisan
+          - order:create-order-mu
+  
+  - queueName: producto-api-catalog-products    
+    attributeName: type
+    commands:
+      - attributeValue: product-create
+        command: php
+        args:
+          - /srv/www/producto-api/artisan
+          - product:create
+      - attributeValue: product-delete
+        command: php
+        args:
+          - /srv/www/producto-api/artisan
+          - product:delete
