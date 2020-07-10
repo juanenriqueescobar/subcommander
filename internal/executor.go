@@ -16,10 +16,16 @@ type Executor struct {
 }
 
 func (e *Executor) logLine(log string, logger *logrus.Entry) {
+
+	log = strings.TrimSpace(log)
+	if len(log) == 0 {
+		return
+	}
+
 	data := make(map[string]interface{})
 	err := json.Unmarshal([]byte(log), &data)
 	if err != nil {
-		logger.WithError(err).Error(log)
+		logger.WithField("jsonlog", false).Debug(log)
 		return
 	}
 
