@@ -45,8 +45,9 @@ type ExecutorMock struct {
 	mock.Mock
 }
 
-func (m *ExecutorMock) run(id string, in string) bool {
-	return m.Called(id, in).Bool(0)
+func (m *ExecutorMock) run(id string, in StdinData) (bool, error) {
+	args := m.Called(id, in)
+	return args.Bool(0), args.Error(1)
 }
 
 func TestPollerSQS_Run(t *testing.T) {
@@ -310,7 +311,7 @@ func TestPollerSQS_poll(t *testing.T) {
 					nil,
 				).Once()
 
-				f[0].e.(*ExecutorMock).On("run", "i2", `{"order_id":2}`).Return(false).Once()
+				f[0].e.(*ExecutorMock).On("run", "i2", StdinData{Metadata: map[string]interface{}{}, Body: `{"order_id":2}`}).Return(false, nil).Once()
 
 				return ctx
 			},
@@ -370,7 +371,7 @@ func TestPollerSQS_poll(t *testing.T) {
 					ReceiptHandle: aws.String("r1"),
 				}).Return(&sqs.DeleteMessageOutput{}, nil).Once()
 
-				f[1].e.(*ExecutorMock).On("run", "i1", `{"order_id":1}`).Return(true).Once()
+				f[1].e.(*ExecutorMock).On("run", "i1", StdinData{Metadata: map[string]interface{}{}, Body: `{"order_id":1}`}).Return(true, nil).Once()
 
 				return ctx
 			},
@@ -462,9 +463,9 @@ func TestPollerSQS_poll(t *testing.T) {
 					ReceiptHandle: aws.String("r3"),
 				}).Return(&sqs.DeleteMessageOutput{}, errors.New("crash")).Once()
 
-				f[1].e.(*ExecutorMock).On("run", "i1", `{"order_id":1}`).Return(true).Once()
-				f[1].e.(*ExecutorMock).On("run", "i2", `{"order_id":2}`).Return(true).Once()
-				f[0].e.(*ExecutorMock).On("run", "i3", `{"order_id":3}`).Return(true).Once()
+				f[1].e.(*ExecutorMock).On("run", "i1", StdinData{Metadata: map[string]interface{}{}, Body: `{"order_id":1}`}).Return(true, nil).Once()
+				f[1].e.(*ExecutorMock).On("run", "i2", StdinData{Metadata: map[string]interface{}{}, Body: `{"order_id":2}`}).Return(true, nil).Once()
+				f[0].e.(*ExecutorMock).On("run", "i3", StdinData{Metadata: map[string]interface{}{}, Body: `{"order_id":3}`}).Return(true, nil).Once()
 
 				return ctx
 			},

@@ -1,13 +1,20 @@
 package internal
 
 import (
+	"bytes"
 	"encoding/json"
+	"io"
 	"strings"
 	"time"
 
 	"github.com/juanenriqueescobar/cmd"
 	"github.com/sirupsen/logrus"
 )
+
+type StdinData struct {
+	Metadata map[string]interface{} `json:"metadata"`
+	Body     string                 `json:"body"`
+}
 
 type Executor struct {
 	parentLogger *logrus.Entry
@@ -25,7 +32,7 @@ func (e *Executor) logLine(log string, logger *logrus.Entry) {
 	data := make(map[string]interface{})
 	err := json.Unmarshal([]byte(log), &data)
 	if err != nil {
-		logger.WithField("jsonlog", false).Debug(log)
+		logger.WithField("_jsonlog", false).Debug(log)
 		return
 	}
 
@@ -37,6 +44,7 @@ func (e *Executor) logLine(log string, logger *logrus.Entry) {
 
 	level := logrus.DebugLevel
 	_level, _ := data["level"].(float64)
+	delete(data, "level")
 	switch _level {
 	case 200:
 		level = logrus.InfoLevel
@@ -45,8 +53,8 @@ func (e *Executor) logLine(log string, logger *logrus.Entry) {
 	case 400:
 		level = logrus.ErrorLevel
 	}
-	delete(data, "level")
-	data["_cmd"] = true
+
+	data["_jsonlog"] = true
 	logger.WithFields(data).Log(level, message)
 }
 
@@ -56,7 +64,16 @@ func (e *Executor) logStream(c chan string, logger *logrus.Entry) {
 	}
 }
 
-func (e *Executor) run(id string, data string) bool {
+func (e *Executor) run(id string, data StdinData) (bool, error) {
+	buf := new(bytes.Buffer)
+	err := json.NewEncoder(buf).Encode(data)
+	if err != nil {
+		return false, err
+	}
+	return e.runReader(id, buf), nil
+}
+
+func (e *Executor) runReader(id string, data io.Reader) bool {
 
 	logger := e.parentLogger.WithField("_task_id", id)
 
@@ -67,7 +84,8 @@ func (e *Executor) run(id string, data string) bool {
 
 	cmd := cmd.NewCmdOptions(o, e.command, e.args...)
 	go e.logStream(cmd.Stdout, logger)
-	statusChan := cmd.StartWithStdin(strings.NewReader(data))
+
+	statusChan := cmd.StartWithStdin(data)
 	finalStatus := <-statusChan
 
 	logger = logger.WithField("_duration", (finalStatus.StopTs-finalStatus.StartTs)/int64(time.Millisecond))
