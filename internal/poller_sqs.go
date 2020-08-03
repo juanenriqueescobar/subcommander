@@ -15,13 +15,12 @@ import (
 
 type SQS interface {
 	GetQueueUrl(input *sqs.GetQueueUrlInput) (*sqs.GetQueueUrlOutput, error)
-	// ReceiveMessage(input *sqs.ReceiveMessageInput) (*sqs.ReceiveMessageOutput, error)
 	ReceiveMessageWithContext(ctx aws.Context, input *sqs.ReceiveMessageInput, opts ...request.Option) (*sqs.ReceiveMessageOutput, error)
 	DeleteMessage(input *sqs.DeleteMessageInput) (*sqs.DeleteMessageOutput, error)
 }
 
 type ExecutorI interface {
-	run(string, string) bool
+	run(string, StdinData) (bool, error)
 }
 
 type PollerSQSFilter struct {
@@ -70,14 +69,22 @@ func (p *PollerSQS) poll(ctx context.Context) error {
 			if f.filter(m.MessageAttributes) {
 				wg.Add(1)
 				go func(mm *sqs.Message, ff *PollerSQSFilter) {
-					delete := ff.e.run(*mm.MessageId, *mm.Body)
-					if delete {
-						_, err := p.client.DeleteMessage(&sqs.DeleteMessageInput{
-							QueueUrl:      p.queueURL,
-							ReceiptHandle: mm.ReceiptHandle,
-						})
-						if err != nil {
-							p.logger.WithError(err).Error("message cant be deleted")
+					data := StdinData{
+						Metadata: map[string]interface{}{},
+						Body:     *mm.Body,
+					}
+					delete, err := ff.e.run(*mm.MessageId, data)
+					if err != nil {
+						// TODO do something!!
+					} else {
+						if delete {
+							_, err := p.client.DeleteMessage(&sqs.DeleteMessageInput{
+								QueueUrl:      p.queueURL,
+								ReceiptHandle: mm.ReceiptHandle,
+							})
+							if err != nil {
+								p.logger.WithError(err).Error("message cant be deleted")
+							}
 						}
 					}
 					wg.Done()
