@@ -3,7 +3,6 @@ package internal
 import (
 	"context"
 	"errors"
-	"reflect"
 	"testing"
 	"time"
 
@@ -559,12 +558,12 @@ func TestPollerSQS_NewPollerSQS(t *testing.T) {
 					waitBetweenRequest:  time.Duration(10 * time.Second),
 					filters: []*PollerSQSFilter{
 						{
-							e: NewExec("cmd_1", []string{"a1", "b1"}, l),
+							e: NewExec("cmd_1", []string{"a1", "b1"}, l.WithFields(logrus.Fields{"_task_name": "name", "_task_value": "value_1"})),
 							f: "name",
 							v: "value_1",
 						},
 						{
-							e: NewExec("cmd_2", []string{"a2", "b2"}, l),
+							e: NewExec("cmd_2", []string{"a2", "b2"}, l.WithFields(logrus.Fields{"_task_name": "name", "_task_value": "value_2"})),
 							f: "name",
 							v: "value_2",
 						},
@@ -617,12 +616,12 @@ func TestPollerSQS_NewPollerSQS(t *testing.T) {
 					queueURL:            aws.String("https://queue_2"),
 					filters: []*PollerSQSFilter{
 						{
-							e: NewExec("php", []string{"testing/worker_1.php"}, l),
+							e: NewExec("php", []string{"testing/worker_1.php"}, l.WithFields(logrus.Fields{"_task_name": "operation", "_task_value": "task_1"})),
 							f: "operation",
 							v: "task_1",
 						},
 						{
-							e: NewExec("php", []string{"testing/worker_2.php"}, l),
+							e: NewExec("php", []string{"testing/worker_2.php"}, l.WithFields(logrus.Fields{"_task_name": "operation", "_task_value": "task_2"})),
 							f: "operation",
 							v: "task_2",
 						},
@@ -683,34 +682,6 @@ func TestPollerSQS_NewPollerSQS(t *testing.T) {
 			}
 
 			tt.args.client.AssertExpectations(t)
-		})
-	}
-}
-
-func TestPollerSQSBuilder(t *testing.T) {
-	type args struct {
-		c *config.Config
-		s SQS
-		l *logrus.Entry
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    []*PollerSQS
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := PollerSQSBuilder(tt.args.c, tt.args.s, tt.args.l)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("PollerSQSBuilder() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("PollerSQSBuilder() = %v, want %v", got, tt.want)
-			}
 		})
 	}
 }
