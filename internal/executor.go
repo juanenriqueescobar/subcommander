@@ -92,15 +92,15 @@ func (e *Executor) runReader(id string, data io.Reader) bool {
 
 	// todo bien
 	if finalStatus.Exit == 0 {
-		logger.Info("task finish")
+		logger.WithField("_task_ok", 1).Info("task finish")
 		return true
 	}
 
 	// algo falló
 	if finalStatus.Error != nil {
-		logger.WithError(finalStatus.Error).Error("task finish")
+		logger.WithField("_task_fail", 1).WithError(finalStatus.Error).Error("task finish")
 	} else {
-		logger.Error("task finish")
+		logger.WithField("_task_fail", 1).Error("task finish")
 	}
 	return false
 }

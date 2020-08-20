@@ -150,7 +150,7 @@ func NewPollerSQS(config config.Sqs, client SQS, parentLogger *logrus.Entry) (*P
 	filters := make([]*PollerSQSFilter, len(config.Commands))
 	for i, c := range config.Commands {
 		filters[i] = &PollerSQSFilter{
-			e: NewExec(c.Command, c.Args, logger),
+			e: NewExec(c.Command, c.Args, logger.WithFields(logrus.Fields{"_task_name": config.AttributeName, "_task_value": c.AttributeValue})),
 			f: config.AttributeName,
 			v: c.AttributeValue,
 		}

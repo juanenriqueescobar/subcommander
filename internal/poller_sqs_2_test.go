@@ -293,12 +293,12 @@ func Test_poller_unit(t *testing.T) {
 					sleepOnError:        10 * time.Second,
 					filters: []*PollerSQSFilter{
 						{
-							e: NewExec("php", []string{"testing/worker_1.php"}, l),
+							e: NewExec("php", []string{"testing/worker_1.php"}, l.WithFields(logrus.Fields{"_task_name": "operation", "_task_value": "task_1"})),
 							f: "operation",
 							v: "task_1",
 						},
 						{
-							e: NewExec("php", []string{"testing/worker_2.php"}, l),
+							e: NewExec("php", []string{"testing/worker_2.php"}, l.WithFields(logrus.Fields{"_task_name": "operation", "_task_value": "task_2"})),
 							f: "operation",
 							v: "task_2",
 						},
@@ -384,12 +384,12 @@ func Test_poller_unit(t *testing.T) {
 					queueURL:            aws.String("https://abcdefghijk"),
 					filters: []*PollerSQSFilter{
 						{
-							e: NewExec("php", []string{"testing/worker_1.php"}, l),
+							e: NewExec("php", []string{"testing/worker_1.php"}, l.WithFields(logrus.Fields{"_task_name": "operation_2", "_task_value": "task_1"})),
 							f: "operation_2",
 							v: "task_1",
 						},
 						{
-							e: NewExec("php", []string{"testing/worker_2.php"}, l),
+							e: NewExec("php", []string{"testing/worker_2.php"}, l.WithFields(logrus.Fields{"_task_name": "operation_2", "_task_value": "task_2"})),
 							f: "operation_2",
 							v: "task_2",
 						},
