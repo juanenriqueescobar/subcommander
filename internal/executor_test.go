@@ -55,7 +55,7 @@ func Test_exec_ok(t *testing.T) {
 
 			l := hook.AllEntries()
 
-			assert.Equal(t, l[0].Data, logrus.Fields{"_args": tt.ex.args, "_cmd": tt.ex.command, "_task_id": tt.args.id})
+			assert.Equal(t, l[0].Data, logrus.Fields{"_args": tt.ex.args, "_cmd": tt.ex.command, "_task_id": tt.args.id, "_task_start": 1})
 			assert.Equal(t, l[0].Message, "task start")
 			assert.Equal(t, l[0].Level, logrus.InfoLevel)
 
@@ -83,8 +83,12 @@ func Test_exec_ok(t *testing.T) {
 			assert.Equal(t, l[6].Message, "step6")
 			assert.Equal(t, l[6].Level, logrus.DebugLevel)
 
-			assert.Contains(t, l[7].Data, "_duration")
-			assert.Equal(t, l[7].Data["_task_ok"], 1)
+			assert.Equal(t, l[7].Data, logrus.Fields{
+				"_task_id":        tt.args.id,
+				"_duration":       l[7].Data["_duration"].(int64), // Non deterministic
+				"_task_result_ok": 1,
+				"_task_finish":    1,
+			})
 			assert.Equal(t, l[7].Message, "task finish")
 			assert.Equal(t, l[7].Level, logrus.InfoLevel)
 
@@ -130,7 +134,7 @@ func Test_exec_fail(t *testing.T) {
 
 			l := hook.AllEntries()
 
-			assert.Equal(t, l[0].Data, logrus.Fields{"_args": tt.ex.args, "_cmd": tt.ex.command, "_task_id": tt.args.id})
+			assert.Equal(t, l[0].Data, logrus.Fields{"_args": tt.ex.args, "_cmd": tt.ex.command, "_task_id": tt.args.id, "_task_start": 1})
 			assert.Equal(t, l[0].Message, "task start")
 			assert.Equal(t, l[0].Level, logrus.InfoLevel)
 
@@ -138,8 +142,12 @@ func Test_exec_fail(t *testing.T) {
 			assert.Equal(t, l[1].Message, "Could not open input file: testing/tester_0.php")
 			assert.Equal(t, l[1].Level, logrus.DebugLevel)
 
-			assert.Contains(t, l[2].Data, "_duration")
-			assert.Equal(t, l[2].Data["_task_fail"], 1)
+			assert.Equal(t, l[2].Data, logrus.Fields{
+				"_task_id":          tt.args.id,
+				"_duration":         l[2].Data["_duration"].(int64), // Non deterministic
+				"_task_result_fail": 1,
+				"_task_finish":      1,
+			})
 			assert.Equal(t, l[2].Message, "task finish")
 			assert.Equal(t, l[2].Level, logrus.ErrorLevel)
 
