@@ -10,9 +10,18 @@ import (
 
 func Logger() *logrus.Logger {
 	logger := logrus.New()
-	logger.SetFormatter(&logrus.JSONFormatter{})
-	logger.SetLevel(logrus.DebugLevel)
 
+	logger.SetFormatter(&logrus.JSONFormatter{
+		FieldMap: logrus.FieldMap{
+			logrus.FieldKeyTime:  "@timestamp",
+			logrus.FieldKeyLevel: "log.level",
+			logrus.FieldKeyMsg:   "message",
+			logrus.FieldKeyFunc:  "function.name", // non-ECS
+			// logrus.FieldKeyLogrusError: "error.message",
+		},
+	})
+	logrus.ErrorKey = "error.message" // TODO why?
+	logger.SetLevel(logrus.DebugLevel)
 	return logger
 }
 
