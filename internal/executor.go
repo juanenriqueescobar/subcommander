@@ -75,7 +75,7 @@ func (e *Executor) run(id string, data StdinData) (bool, error) {
 
 func (e *Executor) runReader(id string, data io.Reader) bool {
 
-	logger := e.parentLogger.WithField("_task_id", id)
+	logger := e.parentLogger.WithField("trace.id", id)
 
 	logger.WithFields(logrus.Fields{"_cmd": e.command, "_args": e.args, "_task_start": 1}).Info("task start")
 	o := cmd.Options{

@@ -55,36 +55,36 @@ func Test_exec_ok(t *testing.T) {
 
 			l := hook.AllEntries()
 
-			assert.Equal(t, l[0].Data, logrus.Fields{"_args": tt.ex.args, "_cmd": tt.ex.command, "_task_id": tt.args.id, "_task_start": 1})
+			assert.Equal(t, l[0].Data, logrus.Fields{"_args": tt.ex.args, "_cmd": tt.ex.command, "trace.id": tt.args.id, "_task_start": 1})
 			assert.Equal(t, l[0].Message, "task start")
 			assert.Equal(t, l[0].Level, logrus.InfoLevel)
 
-			assert.Equal(t, l[1].Data, logrus.Fields{"_jsonlog": true, "_task_id": tt.args.id})
+			assert.Equal(t, l[1].Data, logrus.Fields{"_jsonlog": true, "trace.id": tt.args.id})
 			assert.Equal(t, l[1].Message, "step1")
 			assert.Equal(t, l[1].Level, logrus.DebugLevel)
 
-			assert.Equal(t, l[2].Data, logrus.Fields{"_jsonlog": true, "_task_id": tt.args.id})
+			assert.Equal(t, l[2].Data, logrus.Fields{"_jsonlog": true, "trace.id": tt.args.id})
 			assert.Equal(t, l[2].Message, "step2")
 			assert.Equal(t, l[2].Level, logrus.DebugLevel)
 
-			assert.Equal(t, l[3].Data, logrus.Fields{"_jsonlog": true, "_task_id": tt.args.id, "metadata": tt.args.data.Metadata})
+			assert.Equal(t, l[3].Data, logrus.Fields{"_jsonlog": true, "trace.id": tt.args.id, "metadata": tt.args.data.Metadata})
 			assert.Equal(t, l[3].Message, "step3")
 			assert.Equal(t, l[3].Level, logrus.InfoLevel)
 
-			assert.Equal(t, l[4].Data, logrus.Fields{"_jsonlog": true, "_task_id": tt.args.id, "body": body})
+			assert.Equal(t, l[4].Data, logrus.Fields{"_jsonlog": true, "trace.id": tt.args.id, "body": body})
 			assert.Equal(t, l[4].Message, "step4")
 			assert.Equal(t, l[4].Level, logrus.WarnLevel)
 
-			assert.Equal(t, l[5].Data, logrus.Fields{"_jsonlog": true, "_task_id": tt.args.id})
+			assert.Equal(t, l[5].Data, logrus.Fields{"_jsonlog": true, "trace.id": tt.args.id})
 			assert.Equal(t, l[5].Message, "step5")
 			assert.Equal(t, l[5].Level, logrus.ErrorLevel)
 
-			assert.Equal(t, l[6].Data, logrus.Fields{"_jsonlog": false, "_task_id": tt.args.id})
+			assert.Equal(t, l[6].Data, logrus.Fields{"_jsonlog": false, "trace.id": tt.args.id})
 			assert.Equal(t, l[6].Message, "step6")
 			assert.Equal(t, l[6].Level, logrus.DebugLevel)
 
 			assert.Equal(t, l[7].Data, logrus.Fields{
-				"_task_id":        tt.args.id,
+				"trace.id":        tt.args.id,
 				"_duration":       l[7].Data["_duration"].(int64), // Non deterministic
 				"_task_result_ok": 1,
 				"_task_finish":    1,
@@ -134,16 +134,16 @@ func Test_exec_fail(t *testing.T) {
 
 			l := hook.AllEntries()
 
-			assert.Equal(t, l[0].Data, logrus.Fields{"_args": tt.ex.args, "_cmd": tt.ex.command, "_task_id": tt.args.id, "_task_start": 1})
+			assert.Equal(t, l[0].Data, logrus.Fields{"_args": tt.ex.args, "_cmd": tt.ex.command, "trace.id": tt.args.id, "_task_start": 1})
 			assert.Equal(t, l[0].Message, "task start")
 			assert.Equal(t, l[0].Level, logrus.InfoLevel)
 
-			assert.Equal(t, l[1].Data, logrus.Fields{"_jsonlog": false, "_task_id": tt.args.id})
+			assert.Equal(t, l[1].Data, logrus.Fields{"_jsonlog": false, "trace.id": tt.args.id})
 			assert.Equal(t, l[1].Message, "Could not open input file: testing/tester_0.php")
 			assert.Equal(t, l[1].Level, logrus.DebugLevel)
 
 			assert.Equal(t, l[2].Data, logrus.Fields{
-				"_task_id":          tt.args.id,
+				"trace.id":          tt.args.id,
 				"_duration":         l[2].Data["_duration"].(int64), // Non deterministic
 				"_task_result_fail": 1,
 				"_task_finish":      1,
