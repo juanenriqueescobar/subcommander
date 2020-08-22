@@ -5,8 +5,8 @@ sqs:
 build:
 	cd internal/di && wire
 	go build -o subcommander cmd/main.go
-	mv subcommander subcommander-v0.0.4
-	sha256sum subcommander-v0.0.4
+	mv subcommander subcommander-v0.0.6
+	sha256sum subcommander-v0.0.6
 
 test:
 	go test -coverprofile=coverage.out ./...

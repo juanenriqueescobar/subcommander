@@ -22,13 +22,8 @@ type Sqs struct {
 	WaitBetweenRequest  int64         `yaml:"waitBetweenRequest"`
 }
 
-type InstanceID struct {
-	AWS bool `yaml:"aws"`
-}
-
 type Config struct {
-	Sqs        []Sqs      `yaml:"sqs"`
-	InstanceID InstanceID `yaml:"instanceID"`
+	Sqs []Sqs `yaml:"sqs"`
 }
 
 func NewConfigFromArgs(args []string) (*Config, error) {
