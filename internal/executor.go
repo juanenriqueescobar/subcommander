@@ -75,9 +75,19 @@ func (e *Executor) run(id string, data StdinData) (bool, error) {
 
 func (e *Executor) runReader(id string, data io.Reader) bool {
 
-	logger := e.parentLogger.WithField("trace.id", id)
+	logger := e.parentLogger.WithFields(logrus.Fields{
+		"trace.id":   id, // TODO esto no es el trace id, falta recibirlo
+		"sc_task.id": id,
+	})
 
-	logger.WithFields(logrus.Fields{"_cmd": e.command, "_args": e.args, "_task_start": 1}).Info("task start")
+	logger.WithFields(logrus.Fields{
+		"sc_task": logrus.Fields{
+			"cmd":     e.command,
+			"args":    e.args,
+			"action":  "started",
+			"started": 1,
+		},
+	}).Info("task start")
 	o := cmd.Options{
 		Streaming: true,
 	}
@@ -89,21 +99,24 @@ func (e *Executor) runReader(id string, data io.Reader) bool {
 	finalStatus := <-statusChan
 
 	logger = logger.WithFields(logrus.Fields{
-		"_duration":    (finalStatus.StopTs - finalStatus.StartTs) / int64(time.Millisecond),
-		"_task_finish": 1,
+		"sc_task": logrus.Fields{
+			"duration": (finalStatus.StopTs - finalStatus.StartTs) / int64(time.Millisecond),
+			"action":   "finished",
+			"finished": 1,
+		},
 	})
 
 	// todo bien
 	if finalStatus.Exit == 0 {
-		logger.WithField("_task_result_ok", 1).Info("task finish")
+		logger.WithField("sc_task.success", 1).Info("task finish")
 		return true
 	}
 
 	// algo falló
 	if finalStatus.Error != nil {
-		logger.WithField("_task_result_fail", 1).WithError(finalStatus.Error).Error("task finish")
+		logger.WithField("sc_task.fail", 1).WithError(finalStatus.Error).Error("task finish")
 	} else {
-		logger.WithField("_task_result_fail", 1).Error("task finish")
+		logger.WithField("sc_task.fail", 1).Error("task finish")
 	}
 	return false
 }

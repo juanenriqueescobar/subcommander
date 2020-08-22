@@ -22,9 +22,6 @@ func Test_NewConfigFromArgs(t *testing.T) {
 				path: []string{"testdata/config_1.yml"},
 			},
 			want: &Config{
-				InstanceID: InstanceID{
-					AWS: true,
-				},
 				Sqs: []Sqs{
 					{
 						QueueName:           "producto-api-order-operations",

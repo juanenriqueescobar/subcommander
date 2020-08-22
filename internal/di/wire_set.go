@@ -11,7 +11,6 @@ import (
 	"github.com/juanenriqueescobar/subcommander/internal"
 	"github.com/juanenriqueescobar/subcommander/internal/commander"
 	"github.com/juanenriqueescobar/subcommander/internal/config"
-	"github.com/juanenriqueescobar/subcommander/internal/ec2"
 )
 
 var stdset = wire.NewSet(
@@ -31,5 +30,4 @@ var stdset = wire.NewSet(
 	wire.Bind(new(client.ConfigProvider), new(*session.Session)),
 
 	ec2metadata.New,
-	ec2.GetInfo,
 )

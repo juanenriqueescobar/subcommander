@@ -2,11 +2,6 @@
 # logger:
 #   level: debug
 
-instanceID:
-  # si debe detectar el ID de la instancia para el logger
-  # true si se ejecuta en una instancia en la nube de aws
-  aws: true  
-
 sqs:
   # cola que puede recibir varios contratos diferentes, discriminados por un atributo
   - queueName: producto-api-order-operations    
