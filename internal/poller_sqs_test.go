@@ -547,7 +547,7 @@ func TestPollerSQS_NewPollerSQS(t *testing.T) {
 					nil,
 				).Once()
 
-				l = l.WithField("_queue", "queue_1")
+				l = l.WithField("sc_task.queue", "queue_1")
 				return &PollerSQS{
 					client:              s,
 					logger:              l,
@@ -606,7 +606,7 @@ func TestPollerSQS_NewPollerSQS(t *testing.T) {
 					nil,
 				).Once()
 
-				l = l.WithField("_queue", "queue_2")
+				l = l.WithField("sc_task.queue", "queue_2")
 				return &PollerSQS{
 					client:              s,
 					logger:              l,

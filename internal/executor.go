@@ -64,6 +64,7 @@ func (e *Executor) logStream(c chan string, logger *logrus.Entry) {
 	}
 }
 
+// Deprecated
 func (e *Executor) run(id string, data StdinData) (bool, error) {
 	buf := new(bytes.Buffer)
 	err := json.NewEncoder(buf).Encode(data)
@@ -98,25 +99,28 @@ func (e *Executor) runReader(id string, data io.Reader) bool {
 	statusChan := cmd.StartWithStdin(data)
 	finalStatus := <-statusChan
 
-	logger = logger.WithFields(logrus.Fields{
+	fields := logrus.Fields{
 		"sc_task": logrus.Fields{
 			"duration": (finalStatus.StopTs - finalStatus.StartTs) / int64(time.Millisecond),
 			"action":   "finished",
 			"finished": 1,
 		},
-	})
-
+	}
 	// todo bien
 	if finalStatus.Exit == 0 {
-		logger.WithField("sc_task.success", 1).Info("task finish")
+		fields["sc_task.status"] = "success"
+		fields["sc_task.success"] = 1
+		logger.WithFields(fields).Info("task finish")
 		return true
 	}
 
+	fields["sc_task.status"] = "fail"
+	fields["sc_task.fail"] = 1
 	// algo falló
 	if finalStatus.Error != nil {
-		logger.WithField("sc_task.fail", 1).WithError(finalStatus.Error).Error("task finish")
+		logger.WithFields(fields).WithError(finalStatus.Error).Error("task finish")
 	} else {
-		logger.WithField("sc_task.fail", 1).Error("task finish")
+		logger.WithFields(fields).Error("task finish")
 	}
 	return false
 }

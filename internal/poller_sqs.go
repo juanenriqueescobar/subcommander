@@ -138,7 +138,7 @@ func max(a, b int64) *int64 {
 
 func NewPollerSQS(config config.Sqs, client SQS, parentLogger *logrus.Entry) (*PollerSQS, error) {
 
-	logger := parentLogger.WithField("_queue", config.QueueName)
+	logger := parentLogger.WithField("sc_task.queue", config.QueueName)
 
 	queueURL, err := client.GetQueueUrl(&sqs.GetQueueUrlInput{
 		QueueName: aws.String(config.QueueName),

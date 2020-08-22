@@ -283,7 +283,7 @@ func Test_poller_unit(t *testing.T) {
 				return mock
 			},
 			want: func(s *SQSMock, l *logrus.Entry) *PollerSQS {
-				l = l.WithField("_queue", "queue_1")
+				l = l.WithField("sc_task.queue", "queue_1")
 				return &PollerSQS{
 					client:              s,
 					logger:              l,
@@ -374,7 +374,7 @@ func Test_poller_unit(t *testing.T) {
 				return mock
 			},
 			want: func(s *SQSMock, l *logrus.Entry) *PollerSQS {
-				l = l.WithField("_queue", "queue_2")
+				l = l.WithField("sc_task.queue", "queue_2")
 				return &PollerSQS{
 					client:              s,
 					logger:              l,
