@@ -128,6 +128,7 @@ func Test_exec_ok(t *testing.T) {
 					"action":   "finished",
 					"finished": 1,
 				},
+				"sc_task.status":  "success",
 				"sc_task.success": 1,
 				"sc_task.id":      tt.args.id,
 				"trace.id":        tt.args.id,
@@ -204,9 +205,10 @@ func Test_exec_fail(t *testing.T) {
 					"action":   "finished",
 					"finished": 1,
 				},
-				"sc_task.fail": 1,
-				"sc_task.id":   tt.args.id,
-				"trace.id":     tt.args.id,
+				"sc_task.status": "fail",
+				"sc_task.fail":   1,
+				"sc_task.id":     tt.args.id,
+				"trace.id":       tt.args.id,
 			})
 			assert.Equal(t, l[2].Message, "task finish")
 			assert.Equal(t, l[2].Level, logrus.ErrorLevel)
