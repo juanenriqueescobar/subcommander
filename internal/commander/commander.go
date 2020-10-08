@@ -38,7 +38,7 @@ func (c *Commander) register(reader Reader) {
 }
 
 func (c *Commander) Wait() {
-	signal.Notify(c.signals, syscall.SIGINT, syscall.SIGTERM, syscall.SIGSTOP)
+	signal.Notify(c.signals, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		sig := <-c.signals
 		c.logger.WithField("signal", sig).Info("stop signal received")

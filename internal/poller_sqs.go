@@ -45,7 +45,9 @@ type PollerSQS struct {
 	sleepOnError        time.Duration
 }
 
-func (p *PollerSQS) poll(ctx context.Context) error {
+// poll
+// si retorna true entonces espera antes de hacer la siguiente consulta
+func (p *PollerSQS) poll(ctx context.Context) (bool, error) {
 
 	messages, err := p.client.ReceiveMessageWithContext(ctx, &sqs.ReceiveMessageInput{
 		MaxNumberOfMessages:   p.maxNumberOfMessages,
@@ -55,11 +57,11 @@ func (p *PollerSQS) poll(ctx context.Context) error {
 	})
 
 	if err != nil {
-		return err
+		return true, err
 	}
 
 	if len(messages.Messages) == 0 {
-		return nil
+		return true, nil
 	}
 
 	wg := sync.WaitGroup{}
@@ -94,7 +96,7 @@ func (p *PollerSQS) poll(ctx context.Context) error {
 	}
 	wg.Wait()
 
-	return nil
+	return len(messages.Messages) == 0, nil
 }
 
 func (p *PollerSQS) Run(ctx context.Context) {
@@ -105,12 +107,11 @@ func (p *PollerSQS) Run(ctx context.Context) {
 			p.logger.Info("stop")
 			return
 		default:
-			err := p.poll(ctx)
+			wait, err := p.poll(ctx)
 			var sleep time.Duration
 			if err != nil {
 				if aerr, ok := err.(awserr.Error); ok && aerr.Code() == request.CanceledErrorCode {
 					p.logger.Debug("request canceled by context")
-					// sleep = 0
 				} else {
 					p.logger.WithError(err).Error("error getting messages")
 					sleep = p.sleepOnError
@@ -119,7 +120,7 @@ func (p *PollerSQS) Run(ctx context.Context) {
 				sleep = p.waitBetweenRequest
 			}
 
-			if sleep > 0 {
+			if wait {
 				// sleep some time or until context were canceled
 				ctx2, cancel := context.WithTimeout(ctx, sleep)
 				defer cancel()

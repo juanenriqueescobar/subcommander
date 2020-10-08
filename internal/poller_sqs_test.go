@@ -213,10 +213,11 @@ func TestPollerSQS_poll(t *testing.T) {
 		sleepOnError        time.Duration
 	}
 	tests := []struct {
-		name    string
-		fields  fields
-		wantErr bool
-		mocker  func(*SQSMock, []*PollerSQSFilter) context.Context
+		name     string
+		fields   fields
+		wantErr  bool
+		wantWait bool
+		mocker   func(*SQSMock, []*PollerSQSFilter) context.Context
 	}{
 		{
 			name: "one msg, no filter for message, does not delete it",
@@ -229,7 +230,8 @@ func TestPollerSQS_poll(t *testing.T) {
 				filters:             []*PollerSQSFilter{},
 				sleepOnError:        1 * time.Microsecond,
 			},
-			wantErr: false,
+			wantErr:  false,
+			wantWait: false,
 			mocker: func(m *SQSMock, f []*PollerSQSFilter) context.Context {
 				ctx := context.Background()
 
@@ -282,7 +284,8 @@ func TestPollerSQS_poll(t *testing.T) {
 				},
 				sleepOnError: 1 * time.Microsecond,
 			},
-			wantErr: false,
+			wantErr:  false,
+			wantWait: false,
 			mocker: func(m *SQSMock, f []*PollerSQSFilter) context.Context {
 				ctx := context.Background()
 
@@ -337,7 +340,8 @@ func TestPollerSQS_poll(t *testing.T) {
 				},
 				sleepOnError: 1 * time.Microsecond,
 			},
-			wantErr: false,
+			wantErr:  false,
+			wantWait: false,
 			mocker: func(m *SQSMock, f []*PollerSQSFilter) context.Context {
 				ctx := context.Background()
 
@@ -397,7 +401,8 @@ func TestPollerSQS_poll(t *testing.T) {
 				},
 				sleepOnError: 1 * time.Microsecond,
 			},
-			wantErr: false,
+			wantErr:  false,
+			wantWait: false,
 			mocker: func(m *SQSMock, f []*PollerSQSFilter) context.Context {
 				ctx := context.Background()
 
@@ -482,8 +487,13 @@ func TestPollerSQS_poll(t *testing.T) {
 				sleepOnError:        tt.fields.sleepOnError,
 			}
 			ctx := tt.mocker(tt.fields.client, tt.fields.filters)
-			if err := p.poll(ctx); (err != nil) != tt.wantErr {
+			wait, err := p.poll(ctx)
+			if (err != nil) != tt.wantErr {
 				t.Errorf("PollerSQS.poll() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if wait != tt.wantWait {
+				t.Errorf("PollerSQS.poll() wait = %v, wantWait %v", wait, tt.wantWait)
 			}
 
 			tt.fields.client.AssertExpectations(t)
