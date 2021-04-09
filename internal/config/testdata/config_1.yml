@@ -9,6 +9,7 @@ sqs:
     waitTimeSeconds: 20
     maxNumberOfMessages: 5
     waitBetweenRequest: 5
+    threadsNumber: 3
     commands:      
       - attributeValue: change-state
         command: php

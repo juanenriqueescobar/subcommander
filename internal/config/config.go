@@ -20,6 +20,7 @@ type Sqs struct {
 	WaitTimeSeconds     int64         `yaml:"waitTimeSeconds"`
 	MaxNumberOfMessages int64         `yaml:"maxNumberOfMessages"`
 	WaitBetweenRequest  int64         `yaml:"waitBetweenRequest"`
+	ThreadsNumber       int64         `yaml:"threadsNumber"`
 }
 
 type Config struct {
