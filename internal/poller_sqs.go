@@ -171,13 +171,16 @@ func NewPollerSQS(config config.Sqs, client SQS, parentLogger *logrus.Entry) (*P
 }
 
 func PollerSQSBuilder(c *config.Config, s SQS, l *logrus.Entry) ([]*PollerSQS, error) {
-	pollers := make([]*PollerSQS, len(c.Sqs))
-	for i, r := range c.Sqs {
-		p, err := NewPollerSQS(r, s, l)
-		if err != nil {
-			return nil, err
+	pollers := make([]*PollerSQS, 0)
+	for _, r := range c.Sqs {
+		x := *max(1, r.ThreadsNumber)
+		for i := int64(0); i < x; i++ {
+			p, err := NewPollerSQS(r, s, l)
+			if err != nil {
+				return nil, err
+			}
+			pollers = append(pollers, p)
 		}
-		pollers[i] = p
 	}
 	return pollers, nil
 }

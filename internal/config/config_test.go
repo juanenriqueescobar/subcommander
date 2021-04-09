@@ -29,6 +29,7 @@ func Test_NewConfigFromArgs(t *testing.T) {
 						MaxNumberOfMessages: 5,
 						WaitBetweenRequest:  5,
 						AttributeName:       "operation",
+						ThreadsNumber:       3,
 						Commands: []SqsCommands{
 							{
 								AttributeValue: "change-state",
@@ -53,6 +54,7 @@ func Test_NewConfigFromArgs(t *testing.T) {
 						WaitTimeSeconds:     0,
 						MaxNumberOfMessages: 0,
 						AttributeName:       "type",
+						ThreadsNumber:       0,
 						Commands: []SqsCommands{
 							{
 								AttributeValue: "product-create",
