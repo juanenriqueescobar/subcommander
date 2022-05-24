@@ -71,6 +71,7 @@ func (p *PollerSQS) poll(ctx context.Context) (bool, error) {
 			if f.filter(m.MessageAttributes) {
 				wg.Add(1)
 				go func(mm *sqs.Message, ff *PollerSQSFilter) {
+					defer wg.Done()
 					data := StdinData{
 						Metadata: map[string]interface{}{},
 						Body:     *mm.Body,
@@ -89,7 +90,6 @@ func (p *PollerSQS) poll(ctx context.Context) (bool, error) {
 							}
 						}
 					}
-					wg.Done()
 				}(m, f)
 			}
 		}

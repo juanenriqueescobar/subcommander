@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/juanenriqueescobar/cmd"
+	"github.com/go-cmd/cmd"
 	"github.com/sirupsen/logrus"
 )
 
