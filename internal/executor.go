@@ -95,9 +95,9 @@ func (e *Executor) runReader(id string, data io.Reader) bool {
 
 	cmd := cmd.NewCmdOptions(o, e.command, e.args...)
 	go e.logStream(cmd.Stdout, logger)
+	go e.logStream(cmd.Stderr, logger)
 
-	statusChan := cmd.StartWithStdin(data)
-	finalStatus := <-statusChan
+	finalStatus := <-cmd.StartWithStdin(data)
 
 	fields := logrus.Fields{
 		"sc_task": logrus.Fields{

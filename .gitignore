@@ -1,6 +1,10 @@
 
+.env
+
 /internal/di/wire_gen.go
 /subcommander
 /subcommander-*
 /config*.yml
 /coverage.out
+
+bin/
