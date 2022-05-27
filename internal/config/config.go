@@ -3,14 +3,16 @@ package config
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"gopkg.in/yaml.v2"
 )
 
 type SqsCommands struct {
-	AttributeValue string   `yaml:"attributeValue"`
-	Command        string   `yaml:"command"`
-	Args           []string `yaml:"args"`
+	AttributeValue string        `yaml:"attributeValue"`
+	Command        string        `yaml:"command"`
+	Args           []string      `yaml:"args"`
+	Timeout        time.Duration `yaml:"timeout"`
 }
 
 type Sqs struct {

@@ -1,7 +1,7 @@
 
 -include .env
 
-VERSION=v0.0.12
+VERSION=v0.1.0
 
 BUILD_OS=linux # darwin windows
 BUILD_ARCH=amd64 arm64

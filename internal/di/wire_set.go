@@ -1,5 +1,3 @@
-//+build wireinject
-
 package di
 
 import (
@@ -8,9 +6,10 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/google/wire"
-	"github.com/juanenriqueescobar/subcommander/internal"
 	"github.com/juanenriqueescobar/subcommander/internal/commander"
 	"github.com/juanenriqueescobar/subcommander/internal/config"
+	"github.com/juanenriqueescobar/subcommander/internal/pollers"
+	"github.com/juanenriqueescobar/subcommander/internal/providers"
 )
 
 var stdset = wire.NewSet(
@@ -18,7 +17,6 @@ var stdset = wire.NewSet(
 	readers,
 	ctx,
 	config.NewConfigFromArgs,
-	internal.PollerSQSBuilder,
 
 	sqs.New,
 	session.NewSession,
@@ -26,8 +24,14 @@ var stdset = wire.NewSet(
 
 	commander.NewCommander,
 
-	wire.Bind(new(internal.SQS), new(*sqs.SQS)),
+	wire.Bind(new(pollers.Sqs), new(*sqs.SQS)),
+	wire.Struct(new(pollers.SqsPollerConstructor), "*"),
+
 	wire.Bind(new(client.ConfigProvider), new(*session.Session)),
+
+	providers.SqsPollerProvider,
+	wire.Bind(new(providers.SqsConstructor), new(*pollers.SqsPollerConstructor)),
+	wire.Bind(new(providers.Sqs), new(*sqs.SQS)),
 
 	ec2metadata.New,
 )

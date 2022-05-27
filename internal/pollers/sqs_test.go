@@ -1,4 +1,4 @@
-package internal
+package pollers
 
 import (
 	"context"
@@ -11,31 +11,27 @@ import (
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/juanenriqueescobar/subcommander/internal/config"
+	"github.com/juanenriqueescobar/subcommander/internal/executor"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
-type SQSMock struct {
+type SqsMock struct {
 	mock.Mock
 }
 
-func (m *SQSMock) GetQueueUrl(input *sqs.GetQueueUrlInput) (*sqs.GetQueueUrlOutput, error) {
-	args := m.Called(input)
-	return args.Get(0).(*sqs.GetQueueUrlOutput), args.Error(1)
-}
-
-func (m *SQSMock) ReceiveMessage(input *sqs.ReceiveMessageInput) (*sqs.ReceiveMessageOutput, error) {
+func (m *SqsMock) ReceiveMessage(input *sqs.ReceiveMessageInput) (*sqs.ReceiveMessageOutput, error) {
 	args := m.Called(input)
 	return args.Get(0).(*sqs.ReceiveMessageOutput), args.Error(1)
 }
 
-func (m *SQSMock) ReceiveMessageWithContext(ctx aws.Context, input *sqs.ReceiveMessageInput, opts ...request.Option) (*sqs.ReceiveMessageOutput, error) {
+func (m *SqsMock) ReceiveMessageWithContext(ctx aws.Context, input *sqs.ReceiveMessageInput, opts ...request.Option) (*sqs.ReceiveMessageOutput, error) {
 	args := m.Called(ctx, input, opts)
 	return args.Get(0).(*sqs.ReceiveMessageOutput), args.Error(1)
 }
 
-func (m *SQSMock) DeleteMessage(input *sqs.DeleteMessageInput) (*sqs.DeleteMessageOutput, error) {
+func (m *SqsMock) DeleteMessage(input *sqs.DeleteMessageInput) (*sqs.DeleteMessageOutput, error) {
 	args := m.Called(input)
 	return args.Get(0).(*sqs.DeleteMessageOutput), args.Error(1)
 }
@@ -44,28 +40,28 @@ type ExecutorMock struct {
 	mock.Mock
 }
 
-func (m *ExecutorMock) run(id string, in StdinData) (bool, error) {
+func (m *ExecutorMock) Run(id string, in executor.StdinData) (bool, error) {
 	args := m.Called(id, in)
 	return args.Bool(0), args.Error(1)
 }
 
-func TestPollerSQS_Run(t *testing.T) {
+func TestSqsPoller_Run(t *testing.T) {
 	type fields struct {
 		waitBetweenRequest time.Duration
 	}
 	tests := []struct {
 		name   string
 		fields fields
-		mocker func(context.Context, context.CancelFunc) *SQSMock
+		mocker func(context.Context, context.CancelFunc) *SqsMock
 	}{
 		{
 			"1",
 			fields{
 				waitBetweenRequest: time.Microsecond,
 			},
-			func(ctx context.Context, cancel context.CancelFunc) *SQSMock {
+			func(ctx context.Context, cancel context.CancelFunc) *SqsMock {
 				counter := 0
-				mocksqs := &SQSMock{}
+				mocksqs := &SqsMock{}
 				mocksqs.On("ReceiveMessageWithContext", ctx, &sqs.ReceiveMessageInput{
 					MaxNumberOfMessages:   aws.Int64(1),
 					MessageAttributeNames: []*string{aws.String("All")},
@@ -90,9 +86,9 @@ func TestPollerSQS_Run(t *testing.T) {
 			fields{
 				waitBetweenRequest: time.Microsecond,
 			},
-			func(ctx context.Context, cancel context.CancelFunc) *SQSMock {
+			func(ctx context.Context, cancel context.CancelFunc) *SqsMock {
 				counter := 0
-				mocksqs := &SQSMock{}
+				mocksqs := &SqsMock{}
 				mocksqs.On("ReceiveMessageWithContext", ctx, &sqs.ReceiveMessageInput{
 					MaxNumberOfMessages:   aws.Int64(1),
 					MessageAttributeNames: []*string{aws.String("All")},
@@ -117,8 +113,8 @@ func TestPollerSQS_Run(t *testing.T) {
 			fields{
 				waitBetweenRequest: time.Hour,
 			},
-			func(ctx context.Context, cancel context.CancelFunc) *SQSMock {
-				mocksqs := &SQSMock{}
+			func(ctx context.Context, cancel context.CancelFunc) *SqsMock {
+				mocksqs := &SqsMock{}
 				mocksqs.On("ReceiveMessageWithContext", ctx, &sqs.ReceiveMessageInput{
 					MaxNumberOfMessages:   aws.Int64(1),
 					MessageAttributeNames: []*string{aws.String("All")},
@@ -138,8 +134,8 @@ func TestPollerSQS_Run(t *testing.T) {
 			fields{
 				waitBetweenRequest: time.Microsecond,
 			},
-			func(ctx context.Context, cancel context.CancelFunc) *SQSMock {
-				mocksqs := &SQSMock{}
+			func(ctx context.Context, cancel context.CancelFunc) *SqsMock {
+				mocksqs := &SqsMock{}
 				mocksqs.On("ReceiveMessageWithContext", ctx, &sqs.ReceiveMessageInput{
 					MaxNumberOfMessages:   aws.Int64(1),
 					MessageAttributeNames: []*string{aws.String("All")},
@@ -161,8 +157,8 @@ func TestPollerSQS_Run(t *testing.T) {
 			fields{
 				waitBetweenRequest: time.Hour,
 			},
-			func(ctx context.Context, cancel context.CancelFunc) *SQSMock {
-				mocksqs := &SQSMock{}
+			func(ctx context.Context, cancel context.CancelFunc) *SqsMock {
+				mocksqs := &SqsMock{}
 				mocksqs.On("ReceiveMessageWithContext", ctx, &sqs.ReceiveMessageInput{
 					MaxNumberOfMessages:   aws.Int64(1),
 					MessageAttributeNames: []*string{aws.String("All")},
@@ -185,12 +181,12 @@ func TestPollerSQS_Run(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.TODO())
 			mock := tt.mocker(ctx, cancel)
 
-			p := &PollerSQS{
+			p := &SqsPoller{
 				client:              mock,
 				queueURL:            aws.String("https://abcdefghijk"),
 				waitTimeSeconds:     aws.Int64(0),
 				logger:              logrus.New().WithField("", ""),
-				filters:             []*PollerSQSFilter{},
+				filters:             []*SqsFilter{},
 				maxNumberOfMessages: aws.Int64(1),
 				sleepOnError:        time.Hour,
 				waitBetweenRequest:  tt.fields.waitBetweenRequest,
@@ -202,14 +198,14 @@ func TestPollerSQS_Run(t *testing.T) {
 	}
 }
 
-func TestPollerSQS_poll(t *testing.T) {
+func TestSqsPoller_poll(t *testing.T) {
 	type fields struct {
-		client              *SQSMock
+		client              *SqsMock
 		queueURL            *string
 		waitTime            *int64
 		maxNumberOfMessages *int64
 		logger              *logrus.Entry
-		filters             []*PollerSQSFilter
+		filters             []*SqsFilter
 		sleepOnError        time.Duration
 	}
 	tests := []struct {
@@ -217,22 +213,22 @@ func TestPollerSQS_poll(t *testing.T) {
 		fields   fields
 		wantErr  bool
 		wantWait bool
-		mocker   func(*SQSMock, []*PollerSQSFilter) context.Context
+		mocker   func(*SqsMock, []*SqsFilter) context.Context
 	}{
 		{
 			name: "one msg, no filter for message, does not delete it",
 			fields: fields{
-				client:              &SQSMock{},
+				client:              &SqsMock{},
 				queueURL:            aws.String("https://1"),
 				waitTime:            aws.Int64(1),
 				maxNumberOfMessages: aws.Int64(2),
 				logger:              logrus.New().WithField("", ""),
-				filters:             []*PollerSQSFilter{},
+				filters:             []*SqsFilter{},
 				sleepOnError:        1 * time.Microsecond,
 			},
 			wantErr:  false,
 			wantWait: false,
-			mocker: func(m *SQSMock, f []*PollerSQSFilter) context.Context {
+			mocker: func(m *SqsMock, f []*SqsFilter) context.Context {
 				ctx := context.Background()
 
 				m.On("ReceiveMessageWithContext", ctx, &sqs.ReceiveMessageInput{
@@ -265,12 +261,12 @@ func TestPollerSQS_poll(t *testing.T) {
 		{
 			name: "one msg, with filter, error, does not delete it",
 			fields: fields{
-				client:              &SQSMock{},
+				client:              &SqsMock{},
 				queueURL:            aws.String("https://2"),
 				waitTime:            aws.Int64(20),
 				maxNumberOfMessages: aws.Int64(10),
 				logger:              logrus.New().WithField("", ""),
-				filters: []*PollerSQSFilter{
+				filters: []*SqsFilter{
 					{
 						e: &ExecutorMock{},
 						f: "type",
@@ -286,7 +282,7 @@ func TestPollerSQS_poll(t *testing.T) {
 			},
 			wantErr:  false,
 			wantWait: false,
-			mocker: func(m *SQSMock, f []*PollerSQSFilter) context.Context {
+			mocker: func(m *SqsMock, f []*SqsFilter) context.Context {
 				ctx := context.Background()
 
 				m.On("ReceiveMessageWithContext", ctx, &sqs.ReceiveMessageInput{
@@ -313,7 +309,7 @@ func TestPollerSQS_poll(t *testing.T) {
 					nil,
 				).Once()
 
-				f[0].e.(*ExecutorMock).On("run", "i2", StdinData{Metadata: map[string]interface{}{}, Body: `{"order_id":2}`}).Return(false, nil).Once()
+				f[0].e.(*ExecutorMock).On("Run", "i2", executor.StdinData{Metadata: map[string]interface{}{}, Body: `{"order_id":2}`}).Return(false, nil).Once()
 
 				return ctx
 			},
@@ -321,12 +317,12 @@ func TestPollerSQS_poll(t *testing.T) {
 		{
 			name: "one msg, with filter, delete it",
 			fields: fields{
-				client:              &SQSMock{},
+				client:              &SqsMock{},
 				queueURL:            aws.String("https://1"),
 				waitTime:            aws.Int64(1),
 				maxNumberOfMessages: aws.Int64(2),
 				logger:              logrus.New().WithField("", ""),
-				filters: []*PollerSQSFilter{
+				filters: []*SqsFilter{
 					{
 						e: &ExecutorMock{},
 						f: "type",
@@ -342,7 +338,7 @@ func TestPollerSQS_poll(t *testing.T) {
 			},
 			wantErr:  false,
 			wantWait: false,
-			mocker: func(m *SQSMock, f []*PollerSQSFilter) context.Context {
+			mocker: func(m *SqsMock, f []*SqsFilter) context.Context {
 				ctx := context.Background()
 
 				m.On("ReceiveMessageWithContext", ctx, &sqs.ReceiveMessageInput{
@@ -374,7 +370,7 @@ func TestPollerSQS_poll(t *testing.T) {
 					ReceiptHandle: aws.String("r1"),
 				}).Return(&sqs.DeleteMessageOutput{}, nil).Once()
 
-				f[1].e.(*ExecutorMock).On("run", "i1", StdinData{Metadata: map[string]interface{}{}, Body: `{"order_id":1}`}).Return(true, nil).Once()
+				f[1].e.(*ExecutorMock).On("Run", "i1", executor.StdinData{Metadata: map[string]interface{}{}, Body: `{"order_id":1}`}).Return(true, nil).Once()
 
 				return ctx
 			},
@@ -382,12 +378,12 @@ func TestPollerSQS_poll(t *testing.T) {
 		{
 			name: "multiple msg, with filter, delete it",
 			fields: fields{
-				client:              &SQSMock{},
+				client:              &SqsMock{},
 				queueURL:            aws.String("https://1"),
 				waitTime:            aws.Int64(1),
 				maxNumberOfMessages: aws.Int64(2),
 				logger:              logrus.New().WithField("", ""),
-				filters: []*PollerSQSFilter{
+				filters: []*SqsFilter{
 					{
 						e: &ExecutorMock{},
 						f: "type",
@@ -403,7 +399,7 @@ func TestPollerSQS_poll(t *testing.T) {
 			},
 			wantErr:  false,
 			wantWait: false,
-			mocker: func(m *SQSMock, f []*PollerSQSFilter) context.Context {
+			mocker: func(m *SqsMock, f []*SqsFilter) context.Context {
 				ctx := context.Background()
 
 				m.On("ReceiveMessageWithContext", ctx, &sqs.ReceiveMessageInput{
@@ -467,9 +463,9 @@ func TestPollerSQS_poll(t *testing.T) {
 					ReceiptHandle: aws.String("r3"),
 				}).Return(&sqs.DeleteMessageOutput{}, errors.New("crash")).Once()
 
-				f[1].e.(*ExecutorMock).On("run", "i1", StdinData{Metadata: map[string]interface{}{}, Body: `{"order_id":1}`}).Return(true, nil).Once()
-				f[1].e.(*ExecutorMock).On("run", "i2", StdinData{Metadata: map[string]interface{}{}, Body: `{"order_id":2}`}).Return(true, nil).Once()
-				f[0].e.(*ExecutorMock).On("run", "i3", StdinData{Metadata: map[string]interface{}{}, Body: `{"order_id":3}`}).Return(true, nil).Once()
+				f[1].e.(*ExecutorMock).On("Run", "i1", executor.StdinData{Metadata: map[string]interface{}{}, Body: `{"order_id":1}`}).Return(true, nil).Once()
+				f[1].e.(*ExecutorMock).On("Run", "i2", executor.StdinData{Metadata: map[string]interface{}{}, Body: `{"order_id":2}`}).Return(true, nil).Once()
+				f[0].e.(*ExecutorMock).On("Run", "i3", executor.StdinData{Metadata: map[string]interface{}{}, Body: `{"order_id":3}`}).Return(true, nil).Once()
 
 				return ctx
 			},
@@ -477,7 +473,7 @@ func TestPollerSQS_poll(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := &PollerSQS{
+			p := &SqsPoller{
 				client:              tt.fields.client,
 				queueURL:            tt.fields.queueURL,
 				waitTimeSeconds:     tt.fields.waitTime,
@@ -505,60 +501,48 @@ func TestPollerSQS_poll(t *testing.T) {
 	}
 }
 
-func TestPollerSQS_NewPollerSQS(t *testing.T) {
+func TestSqsPollerConstructor_New(t *testing.T) {
 	type args struct {
-		c      config.Sqs
-		client *SQSMock
+		pc       SqsConfig
+		commands []config.SqsCommands
 	}
 	tests := []struct {
-		name    string
-		args    args
-		want    func(*SQSMock, *logrus.Entry) *PollerSQS
-		wantErr bool
+		name string
+		args args
+		want func(*SqsMock, *logrus.Entry) *SqsPoller
 	}{
 		{
 			name: "1",
 			args: args{
-				c: config.Sqs{
-					QueueName:           "queue_1",
-					WaitTimeSeconds:     10,
-					MaxNumberOfMessages: 10,
-					WaitBetweenRequest:  10,
+				pc: SqsConfig{
 					AttributeName:       "name",
-					Commands: []config.SqsCommands{
-						{
-							AttributeValue: "value_1",
-							Command:        "cmd_1",
-							Args: []string{
-								"a1",
-								"b1",
-							},
+					MaxNumberOfMessages: 10,
+					QueueURL:            aws.String("https://queue_1"),
+					VisibilityTimeout:   60,
+					WaitTimeSeconds:     10,
+					WaitBetweenRequest:  10,
+				},
+				commands: []config.SqsCommands{
+					{
+						AttributeValue: "value_1",
+						Command:        "cmd_1",
+						Args: []string{
+							"a1",
+							"b1",
 						},
-						{
-							AttributeValue: "value_2",
-							Command:        "cmd_2",
-							Args: []string{
-								"a2",
-								"b2",
-							},
+					},
+					{
+						AttributeValue: "value_2",
+						Command:        "cmd_2",
+						Args: []string{
+							"a2",
+							"b2",
 						},
 					},
 				},
-				client: &SQSMock{},
 			},
-			want: func(s *SQSMock, l *logrus.Entry) *PollerSQS {
-
-				s.On("GetQueueUrl", &sqs.GetQueueUrlInput{
-					QueueName: aws.String("queue_1"),
-				}).Return(
-					&sqs.GetQueueUrlOutput{
-						QueueUrl: aws.String("https://queue_1"),
-					},
-					nil,
-				).Once()
-
-				l = l.WithField("sc_task.queue", "queue_1")
-				return &PollerSQS{
+			want: func(s *SqsMock, l *logrus.Entry) *SqsPoller {
+				return &SqsPoller{
 					client:              s,
 					logger:              l,
 					maxNumberOfMessages: aws.Int64(10),
@@ -566,14 +550,14 @@ func TestPollerSQS_NewPollerSQS(t *testing.T) {
 					waitTimeSeconds:     aws.Int64(10),
 					sleepOnError:        time.Duration(10 * time.Second),
 					waitBetweenRequest:  time.Duration(10 * time.Second),
-					filters: []*PollerSQSFilter{
+					filters: []*SqsFilter{
 						{
-							e: NewExec("cmd_1", []string{"a1", "b1"}, l.WithFields(logrus.Fields{"sc_task.attr_name": "name", "sc_task.attr_value": "value_1"})),
+							e: executor.NewExec("cmd_1", []string{"a1", "b1"}, 60*time.Second, l.WithFields(logrus.Fields{"sc_task.attr_name": "name", "sc_task.attr_value": "value_1"})),
 							f: "name",
 							v: "value_1",
 						},
 						{
-							e: NewExec("cmd_2", []string{"a2", "b2"}, l.WithFields(logrus.Fields{"sc_task.attr_name": "name", "sc_task.attr_value": "value_2"})),
+							e: executor.NewExec("cmd_2", []string{"a2", "b2"}, 60*time.Second, l.WithFields(logrus.Fields{"sc_task.attr_name": "name", "sc_task.attr_value": "value_2"})),
 							f: "name",
 							v: "value_2",
 						},
@@ -584,56 +568,54 @@ func TestPollerSQS_NewPollerSQS(t *testing.T) {
 		{
 			name: "2",
 			args: args{
-				c: config.Sqs{
-					QueueName:     "queue_2",
-					AttributeName: "operation",
-					Commands: []config.SqsCommands{
-						{
-							AttributeValue: "task_1",
-							Command:        "php",
-							Args: []string{
-								"testing/worker_1.php",
-							},
+				pc: SqsConfig{
+					AttributeName:       "name",
+					MaxNumberOfMessages: 10,
+					QueueURL:            aws.String("https://queue_1"),
+					VisibilityTimeout:   60,
+					WaitTimeSeconds:     10,
+					WaitBetweenRequest:  10,
+				},
+				commands: []config.SqsCommands{
+					{
+						AttributeValue: "value_1",
+						Command:        "cmd_1",
+						Args: []string{
+							"a1",
+							"b1",
 						},
-						{
-							AttributeValue: "task_2",
-							Command:        "php",
-							Args: []string{
-								"testing/worker_2.php",
-							},
+						Timeout: 10000 * time.Second,
+					},
+					{
+						AttributeValue: "value_2",
+						Command:        "cmd_2",
+						Args: []string{
+							"a2",
+							"b2",
 						},
+						Timeout: 20000 * time.Second,
 					},
 				},
-				client: &SQSMock{},
 			},
-			want: func(s *SQSMock, l *logrus.Entry) *PollerSQS {
-				s.On("GetQueueUrl", &sqs.GetQueueUrlInput{
-					QueueName: aws.String("queue_2"),
-				}).Return(
-					&sqs.GetQueueUrlOutput{
-						QueueUrl: aws.String("https://queue_2"),
-					},
-					nil,
-				).Once()
-
-				l = l.WithField("sc_task.queue", "queue_2")
-				return &PollerSQS{
+			want: func(s *SqsMock, l *logrus.Entry) *SqsPoller {
+				return &SqsPoller{
 					client:              s,
 					logger:              l,
-					maxNumberOfMessages: aws.Int64(1),
-					waitTimeSeconds:     aws.Int64(0),
+					maxNumberOfMessages: aws.Int64(10),
+					queueURL:            aws.String("https://queue_1"),
+					waitTimeSeconds:     aws.Int64(10),
 					sleepOnError:        time.Duration(10 * time.Second),
-					queueURL:            aws.String("https://queue_2"),
-					filters: []*PollerSQSFilter{
+					waitBetweenRequest:  time.Duration(10 * time.Second),
+					filters: []*SqsFilter{
 						{
-							e: NewExec("php", []string{"testing/worker_1.php"}, l.WithFields(logrus.Fields{"sc_task.attr_name": "operation", "sc_task.attr_value": "task_1"})),
-							f: "operation",
-							v: "task_1",
+							e: executor.NewExec("cmd_1", []string{"a1", "b1"}, 60*time.Second, l.WithFields(logrus.Fields{"sc_task.attr_name": "name", "sc_task.attr_value": "value_1"})),
+							f: "name",
+							v: "value_1",
 						},
 						{
-							e: NewExec("php", []string{"testing/worker_2.php"}, l.WithFields(logrus.Fields{"sc_task.attr_name": "operation", "sc_task.attr_value": "task_2"})),
-							f: "operation",
-							v: "task_2",
+							e: executor.NewExec("cmd_2", []string{"a2", "b2"}, 60*time.Second, l.WithFields(logrus.Fields{"sc_task.attr_name": "name", "sc_task.attr_value": "value_2"})),
+							f: "name",
+							v: "value_2",
 						},
 					},
 				}
@@ -642,56 +624,67 @@ func TestPollerSQS_NewPollerSQS(t *testing.T) {
 		{
 			name: "3",
 			args: args{
-				c: config.Sqs{
-					QueueName:     "queue_2",
+				pc: SqsConfig{
 					AttributeName: "operation",
-					Commands: []config.SqsCommands{
-						{
-							AttributeValue: "task_1",
-							Command:        "php",
-							Args: []string{
-								"testing/worker_1.php",
-							},
+					QueueURL:      aws.String("https://queue_2"),
+				},
+				commands: []config.SqsCommands{
+					{
+						AttributeValue: "task_1",
+						Command:        "php",
+						Args: []string{
+							"testing/worker_1.php",
 						},
-						{
-							AttributeValue: "task_2",
-							Command:        "php",
-							Args: []string{
-								"testing/worker_2.php",
-							},
+					},
+					{
+						AttributeValue: "task_2",
+						Command:        "php",
+						Args: []string{
+							"testing/worker_2.php",
 						},
 					},
 				},
-				client: &SQSMock{},
 			},
-			wantErr: true,
-			want: func(s *SQSMock, l *logrus.Entry) *PollerSQS {
-				s.On("GetQueueUrl", &sqs.GetQueueUrlInput{
-					QueueName: aws.String("queue_2"),
-				}).Return(
-					&sqs.GetQueueUrlOutput{},
-					errors.New("crash"),
-				).Once()
-
-				return nil
+			want: func(s *SqsMock, l *logrus.Entry) *SqsPoller {
+				return &SqsPoller{
+					client:              s,
+					logger:              l,
+					maxNumberOfMessages: aws.Int64(1),
+					waitTimeSeconds:     aws.Int64(0),
+					sleepOnError:        time.Duration(10 * time.Second),
+					queueURL:            aws.String("https://queue_2"),
+					filters: []*SqsFilter{
+						{
+							e: executor.NewExec("php", []string{"testing/worker_1.php"}, 0, l.WithFields(logrus.Fields{"sc_task.attr_name": "operation", "sc_task.attr_value": "task_1"})),
+							f: "operation",
+							v: "task_1",
+						},
+						{
+							e: executor.NewExec("php", []string{"testing/worker_2.php"}, 0, l.WithFields(logrus.Fields{"sc_task.attr_name": "operation", "sc_task.attr_value": "task_2"})),
+							f: "operation",
+							v: "task_2",
+						},
+					},
+				}
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			logger := logrus.New().WithField("", "")
-			w := tt.want(tt.args.client, logger)
-			p, err := NewPollerSQS(tt.args.c, tt.args.client, logger)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("error = %v, wantErr %v", err, tt.wantErr)
-				return
+			c := &SqsMock{}
+			b := &SqsPollerConstructor{
+				Client: c,
 			}
-			if err == nil && !assert.EqualValues(t, p, w) {
-				t.Errorf("a: %#v", p)
-				t.Errorf("b: %#v", w)
+			want := tt.want(c, logger)
+			got := b.New(tt.args.pc, tt.args.commands, logger)
+
+			if !assert.EqualValues(t, want, got) {
+				t.Errorf("a: %#v", got)
+				t.Errorf("b: %#v", want)
 			}
 
-			tt.args.client.AssertExpectations(t)
+			c.AssertExpectations(t)
 		})
 	}
 }

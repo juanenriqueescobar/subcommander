@@ -1,4 +1,4 @@
-package internal
+package pollers
 
 import (
 	"context"
@@ -10,44 +10,44 @@ import (
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/juanenriqueescobar/subcommander/internal/config"
+	"github.com/juanenriqueescobar/subcommander/internal/executor"
 	"github.com/sirupsen/logrus"
 )
 
-type SQS interface {
-	GetQueueUrl(input *sqs.GetQueueUrlInput) (*sqs.GetQueueUrlOutput, error)
-	ReceiveMessageWithContext(ctx aws.Context, input *sqs.ReceiveMessageInput, opts ...request.Option) (*sqs.ReceiveMessageOutput, error)
+type Sqs interface {
 	DeleteMessage(input *sqs.DeleteMessageInput) (*sqs.DeleteMessageOutput, error)
+	ReceiveMessageWithContext(ctx aws.Context, input *sqs.ReceiveMessageInput, opts ...request.Option) (*sqs.ReceiveMessageOutput, error)
 }
 
-type ExecutorI interface {
-	run(string, StdinData) (bool, error)
+type Executor interface {
+	Run(string, executor.StdinData) (bool, error)
 }
 
-type PollerSQSFilter struct {
-	e ExecutorI
+type SqsFilter struct {
+	e Executor
 	f string
 	v string
 }
 
-func (s *PollerSQSFilter) filter(attrs map[string]*sqs.MessageAttributeValue) bool {
+func (s *SqsFilter) filter(attrs map[string]*sqs.MessageAttributeValue) bool {
 	attr, ok := attrs[s.f]
 	return ok && *attr.StringValue == s.v
 }
 
-type PollerSQS struct {
-	client              SQS
+type SqsPoller struct {
+	client              Sqs
 	queueURL            *string
 	waitTimeSeconds     *int64
 	maxNumberOfMessages *int64
 	waitBetweenRequest  time.Duration
 	logger              *logrus.Entry
-	filters             []*PollerSQSFilter
+	filters             []*SqsFilter
 	sleepOnError        time.Duration
 }
 
 // poll
 // si retorna true entonces espera antes de hacer la siguiente consulta
-func (p *PollerSQS) poll(ctx context.Context) (bool, error) {
+func (p *SqsPoller) poll(ctx context.Context) (bool, error) {
 
 	messages, err := p.client.ReceiveMessageWithContext(ctx, &sqs.ReceiveMessageInput{
 		MaxNumberOfMessages:   p.maxNumberOfMessages,
@@ -70,13 +70,13 @@ func (p *PollerSQS) poll(ctx context.Context) (bool, error) {
 		for _, f := range p.filters {
 			if f.filter(m.MessageAttributes) {
 				wg.Add(1)
-				go func(mm *sqs.Message, ff *PollerSQSFilter) {
+				go func(mm *sqs.Message, ff *SqsFilter) {
 					defer wg.Done()
-					data := StdinData{
+					data := executor.StdinData{
 						Metadata: map[string]interface{}{},
 						Body:     *mm.Body,
 					}
-					delete, err := ff.e.run(*mm.MessageId, data)
+					delete, err := ff.e.Run(*mm.MessageId, data)
 					if err != nil {
 						// TODO do something!!
 					} else {
@@ -99,7 +99,7 @@ func (p *PollerSQS) poll(ctx context.Context) (bool, error) {
 	return len(messages.Messages) == 0, nil
 }
 
-func (p *PollerSQS) Run(ctx context.Context) {
+func (p *SqsPoller) Run(ctx context.Context) {
 	p.logger.Info("start")
 	for {
 		select {
@@ -130,57 +130,47 @@ func (p *PollerSQS) Run(ctx context.Context) {
 	}
 }
 
-func max(a, b int64) *int64 {
-	if a > b {
-		return &a
-	}
-	return &b
+type SqsConfig struct {
+	AttributeName       string
+	MaxNumberOfMessages int64
+	QueueURL            *string
+	VisibilityTimeout   int
+	WaitTimeSeconds     int64
+	WaitBetweenRequest  int64
 }
 
-func NewPollerSQS(config config.Sqs, client SQS, parentLogger *logrus.Entry) (*PollerSQS, error) {
+type SqsPollerConstructor struct {
+	Client Sqs
+}
 
-	logger := parentLogger.WithField("sc_task.queue", config.QueueName)
+func (b *SqsPollerConstructor) New(cnf SqsConfig, commands []config.SqsCommands, logger *logrus.Entry) *SqsPoller {
+	filters := make([]*SqsFilter, len(commands))
+	for i, c := range commands {
 
-	queueURL, err := client.GetQueueUrl(&sqs.GetQueueUrlInput{
-		QueueName: aws.String(config.QueueName),
-	})
-	if err != nil {
-		return nil, err
-	}
+		vt := time.Duration(cnf.VisibilityTimeout) * time.Second
+		if c.Timeout == 0 || c.Timeout > vt {
+			c.Timeout = vt
+		}
 
-	filters := make([]*PollerSQSFilter, len(config.Commands))
-	for i, c := range config.Commands {
-		filters[i] = &PollerSQSFilter{
-			e: NewExec(c.Command, c.Args, logger.WithFields(logrus.Fields{"sc_task.attr_name": config.AttributeName, "sc_task.attr_value": c.AttributeValue})),
-			f: config.AttributeName,
+		filters[i] = &SqsFilter{
+			e: executor.NewExec(c.Command, c.Args, c.Timeout, logger.WithFields(logrus.Fields{
+				"sc_task.attr_name":  cnf.AttributeName,
+				"sc_task.attr_value": c.AttributeValue,
+			})),
+			f: cnf.AttributeName,
 			v: c.AttributeValue,
 		}
 	}
 
-	p := &PollerSQS{
-		client:              client,
+	p := &SqsPoller{
+		client:              b.Client,
 		filters:             filters,
 		logger:              logger,
-		queueURL:            queueURL.QueueUrl,
-		waitTimeSeconds:     aws.Int64(config.WaitTimeSeconds),
-		maxNumberOfMessages: max(config.MaxNumberOfMessages, 1),
+		queueURL:            cnf.QueueURL,
+		waitTimeSeconds:     &cnf.WaitTimeSeconds,
+		maxNumberOfMessages: Max(cnf.MaxNumberOfMessages, 1),
 		sleepOnError:        10 * time.Second,
-		waitBetweenRequest:  time.Duration(config.WaitBetweenRequest) * time.Second,
+		waitBetweenRequest:  time.Duration(cnf.WaitBetweenRequest) * time.Second,
 	}
-	return p, nil
-}
-
-func PollerSQSBuilder(c *config.Config, s SQS, l *logrus.Entry) ([]*PollerSQS, error) {
-	pollers := make([]*PollerSQS, 0)
-	for _, r := range c.Sqs {
-		x := *max(1, r.ThreadsNumber)
-		for i := int64(0); i < x; i++ {
-			p, err := NewPollerSQS(r, s, l)
-			if err != nil {
-				return nil, err
-			}
-			pollers = append(pollers, p)
-		}
-	}
-	return pollers, nil
+	return p
 }

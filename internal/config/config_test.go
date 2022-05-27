@@ -2,6 +2,7 @@ package config
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -38,6 +39,7 @@ func Test_NewConfigFromArgs(t *testing.T) {
 									"/srv/www/producto-api/artisan",
 									"order:change-state",
 								},
+								Timeout: 180 * time.Second,
 							},
 							{
 								AttributeValue: "create-order-mu",
@@ -46,6 +48,7 @@ func Test_NewConfigFromArgs(t *testing.T) {
 									"/srv/www/producto-api/artisan",
 									"order:create-order-mu",
 								},
+								Timeout: 180 * time.Second,
 							},
 						},
 					},

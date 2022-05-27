@@ -3,11 +3,11 @@ package di
 import (
 	"context"
 
-	"github.com/juanenriqueescobar/subcommander/internal"
 	"github.com/juanenriqueescobar/subcommander/internal/commander"
+	"github.com/juanenriqueescobar/subcommander/internal/pollers"
 )
 
-func readers(a []*internal.PollerSQS) []commander.Reader {
+func readers(a []*pollers.SqsPoller) []commander.Reader {
 	r := make([]commander.Reader, len(a))
 
 	for i, rr := range a {

@@ -4,7 +4,7 @@
 
 sqs:
   # cola que puede recibir varios contratos diferentes, discriminados por un atributo
-  - queueName: producto-api-order-operations    
+  - queueName: producto-api-order-operations
     attributeName: operation
     waitTimeSeconds: 20
     maxNumberOfMessages: 5
@@ -16,13 +16,15 @@ sqs:
         args:
           - /srv/www/producto-api/artisan
           - order:change-state
+        timeout: 3m
       - attributeValue: create-order-mu
         command: php
         args:
           - /srv/www/producto-api/artisan
           - order:create-order-mu
+        timeout: 180s
   
-  - queueName: producto-api-catalog-products    
+  - queueName: producto-api-catalog-products
     attributeName: type
     commands:
       - attributeValue: product-create
