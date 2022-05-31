@@ -159,7 +159,7 @@ func NewExec(command string, args []string, timeout time.Duration, l *logrus.Ent
 			"event.category":       []string{"process"},
 			"event.dataset":        "subcommander.exec",
 			"process.args":         args,
-			"process.args.count":   len(args),
+			"process.args_count":   len(args),
 			"process.command_line": command,
 		}),
 	}

@@ -62,7 +62,7 @@ func Test_exec_ok(t *testing.T) {
 				"event.dataset":        "subcommander.exec",
 				"event.type":           []string{"start"},
 				"process.args":         tt.ex.args,
-				"process.args.count":   len(tt.ex.args),
+				"process.args_count":   len(tt.ex.args),
 				"process.command_line": tt.ex.command,
 				"transaction.id":       tt.args.id,
 
@@ -80,7 +80,7 @@ func Test_exec_ok(t *testing.T) {
 				"event.category":       []string{"process"},
 				"event.dataset":        "subcommander.exec",
 				"process.args":         tt.ex.args,
-				"process.args.count":   len(tt.ex.args),
+				"process.args_count":   len(tt.ex.args),
 				"process.command_line": tt.ex.command,
 				"transaction.id":       tt.args.id,
 
@@ -93,7 +93,7 @@ func Test_exec_ok(t *testing.T) {
 				"event.category":       []string{"process"},
 				"event.dataset":        "subcommander.exec",
 				"process.args":         tt.ex.args,
-				"process.args.count":   len(tt.ex.args),
+				"process.args_count":   len(tt.ex.args),
 				"process.command_line": tt.ex.command,
 				"transaction.id":       tt.args.id,
 
@@ -106,7 +106,7 @@ func Test_exec_ok(t *testing.T) {
 				"event.category":       []string{"process"},
 				"event.dataset":        "subcommander.exec",
 				"process.args":         tt.ex.args,
-				"process.args.count":   len(tt.ex.args),
+				"process.args_count":   len(tt.ex.args),
 				"process.command_line": tt.ex.command,
 				"transaction.id":       tt.args.id,
 
@@ -120,7 +120,7 @@ func Test_exec_ok(t *testing.T) {
 				"event.category":       []string{"process"},
 				"event.dataset":        "subcommander.exec",
 				"process.args":         tt.ex.args,
-				"process.args.count":   len(tt.ex.args),
+				"process.args_count":   len(tt.ex.args),
 				"process.command_line": tt.ex.command,
 				"transaction.id":       tt.args.id,
 
@@ -134,7 +134,7 @@ func Test_exec_ok(t *testing.T) {
 				"event.category":       []string{"process"},
 				"event.dataset":        "subcommander.exec",
 				"process.args":         tt.ex.args,
-				"process.args.count":   len(tt.ex.args),
+				"process.args_count":   len(tt.ex.args),
 				"process.command_line": tt.ex.command,
 				"transaction.id":       tt.args.id,
 
@@ -147,7 +147,7 @@ func Test_exec_ok(t *testing.T) {
 				"event.category":       []string{"process"},
 				"event.dataset":        "subcommander.exec",
 				"process.args":         tt.ex.args,
-				"process.args.count":   len(tt.ex.args),
+				"process.args_count":   len(tt.ex.args),
 				"process.command_line": tt.ex.command,
 				"transaction.id":       tt.args.id,
 
@@ -163,7 +163,7 @@ func Test_exec_ok(t *testing.T) {
 				"event.outcome":        "success",
 				"event.type":           []string{"end"},
 				"process.args":         tt.ex.args,
-				"process.args.count":   len(tt.ex.args),
+				"process.args_count":   len(tt.ex.args),
 				"process.command_line": tt.ex.command,
 				"process.exit_code":    0,
 				"transaction.id":       tt.args.id,
@@ -226,7 +226,7 @@ func Test_exec_fail(t *testing.T) {
 				"event.dataset":        "subcommander.exec",
 				"event.type":           []string{"start"},
 				"process.args":         tt.ex.args,
-				"process.args.count":   len(tt.ex.args),
+				"process.args_count":   len(tt.ex.args),
 				"process.command_line": tt.ex.command,
 				"transaction.id":       tt.args.id,
 
@@ -246,7 +246,7 @@ func Test_exec_fail(t *testing.T) {
 				"event.outcome":        "failure",
 				"event.type":           []string{"end"},
 				"process.args":         tt.ex.args,
-				"process.args.count":   len(tt.ex.args),
+				"process.args_count":   len(tt.ex.args),
 				"process.command_line": tt.ex.command,
 				"process.exit_code":    -1,
 				"transaction.id":       tt.args.id,

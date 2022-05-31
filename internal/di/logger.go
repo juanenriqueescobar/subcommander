@@ -5,5 +5,5 @@ import (
 )
 
 func logger2(logger *logrus.Logger) *logrus.Entry {
-	return logrus.NewEntry(logger).WithField("event.module", "subcommander").WithField("", "")
+	return logrus.NewEntry(logger).WithField("event.module", "subcommander")
 }
