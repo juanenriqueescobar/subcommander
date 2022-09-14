@@ -84,8 +84,9 @@ func (e *Executor) Run(id string, data StdinData) (bool, error) {
 		}).Info("task start")
 
 	o := cmd.Options{
-		Buffered:  false,
-		Streaming: true,
+		Buffered:       false,
+		Streaming:      true,
+		LineBufferSize: 1 * 1000 * 1000, // 1 MB
 	}
 	c := cmd.NewCmdOptions(o, e.command, e.args...)
 	go e.logStream(c.Stdout, logger)

@@ -11,6 +11,39 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// verifica q no se reviente cuando una linea de log pesa 1MB
+func Test_exec_very_long_log(t *testing.T) {
+	l := logrus.New()
+	l.SetLevel(logrus.ErrorLevel)
+	type args struct {
+		id   string
+		data StdinData
+	}
+	tests := []struct {
+		name string
+		ex   *Executor
+		args args
+		want bool
+	}{
+		{
+			name: "1",
+			ex:   NewExec("php", []string{"testing/tester_2.php"}, time.Hour, l.WithField("xx", "yy")),
+			args: args{
+				id:   "1",
+				data: StdinData{Body: `{"order_id":1}`, Metadata: map[string]interface{}{"trace_id": "aabbcc"}},
+			},
+			want: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got, _ := tt.ex.Run(tt.args.id, tt.args.data); got != tt.want {
+				t.Errorf("exec() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func Test_exec_ok(t *testing.T) {
 	logger, hook := test.NewNullLogger()
 	logger.SetLevel(logrus.TraceLevel)
